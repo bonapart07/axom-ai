@@ -20,7 +20,7 @@ export async function POST(req: Request) {
       User's message: ${message}`,
     });
 
-    return NextResponse.json({ reply: response.text });
+    return NextResponse.json({ reply: response.text || "" });
   } catch (error: any) {
     console.error("Chat API error:", error);
     return NextResponse.json({ error: "Failed to generate AI response." }, { status: 500 });

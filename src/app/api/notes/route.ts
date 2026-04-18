@@ -32,7 +32,7 @@ export async function POST(req: Request) {
     });
 
     try {
-      const text = response.text.replace(/```json/g, "").replace(/```/g, "").trim();
+      const text = (response.text || "").replace(/```json/g, "").replace(/```/g, "").trim();
       const jsonResult = JSON.parse(text);
       return NextResponse.json(jsonResult);
     } catch (parseError) {

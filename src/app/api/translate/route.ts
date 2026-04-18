@@ -22,7 +22,7 @@ export async function POST(req: Request) {
       Text: "${text}"`,
     });
 
-    return NextResponse.json({ translation: response.text.trim() });
+    return NextResponse.json({ translation: (response.text || "").trim() });
   } catch (error: any) {
     console.error("Translate API error:", error);
     return NextResponse.json({ error: "Failed to generate AI response." }, { status: 500 });
