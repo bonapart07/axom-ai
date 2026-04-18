@@ -21,7 +21,7 @@ export const googleProvider = new GoogleAuthProvider();
 export const db = getFirestore(app);
 
 // Helper to sync user auth state to Firestore Database
-export const syncUserToFirestore = async (user, name = null) => {
+export const syncUserToFirestore = async (user: any, name: string | null = null) => {
   if (!user) return;
   try {
     const userRef = doc(db, 'users', user.uid);
