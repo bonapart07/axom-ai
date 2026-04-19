@@ -16,7 +16,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if ((session?.user as any)?.id) {
-      getUserDashboardData((session.user as any).id).then((data) => {
+      getUserDashboardData((session?.user as any)?.id as string).then((data) => {
         setStats(data.stats);
         setActivities(data.recentActivities);
         setLoading(false);
