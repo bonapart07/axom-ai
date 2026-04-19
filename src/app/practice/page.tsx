@@ -162,9 +162,9 @@ export default function PracticePage() {
                     setCurrentQIndex(currentQIndex + 1);
                   } else {
                     setQuizState("results");
-                    if (session?.user?.id) {
+                    if ((session?.user as any)?.id) {
                       const finalScore = calculateScore();
-                      logUserActivity(session.user.id, "Quiz", `Practice: ${topic}`, { score: finalScore, total: questions.length });
+                      logUserActivity((session.user as any).id, "Quiz", `Practice: ${topic}`, { score: finalScore, total: questions.length });
                     }
                   }
                 }}                disabled={selectedAnswers[currentQIndex] === undefined}

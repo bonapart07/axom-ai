@@ -65,8 +65,8 @@ export default function ChatPage() {
         setMessages(prev => [...prev, { id: (Date.now() + 1).toString(), role: "assistant", content: data.reply }]);
         
         // Log the activity to Dashboard
-        if (session?.user?.id) {
-          logUserActivity(session.user.id, "Chat", userMsg.content);
+        if ((session?.user as any)?.id) {
+          logUserActivity((session.user as any).id, "Chat", userMsg.content);
         }
       } else {
         setMessages(prev => [...prev, { id: (Date.now() + 1).toString(), role: "assistant", content: "Error: " + (data.error || "Unknown Error") }]);
@@ -106,8 +106,8 @@ export default function ChatPage() {
       if (data.reply) {
         setMessages(prev => [...prev, { id: (Date.now() + 1).toString(), role: "assistant", content: data.reply }]);
         
-        if (session?.user?.id) {
-          logUserActivity(session.user.id, "Chat", `Action: ${action}`);
+        if ((session?.user as any)?.id) {
+          logUserActivity((session.user as any).id, "Chat", `Action: ${action}`);
         }
       } else {
         setMessages(prev => [...prev, { id: (Date.now() + 1).toString(), role: "assistant", content: "Error: " + (data.error || "Unknown Error") }]);

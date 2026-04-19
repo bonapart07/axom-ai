@@ -15,14 +15,14 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (session?.user?.id) {
-      getUserDashboardData(session.user.id).then((data) => {
+    if ((session?.user as any)?.id) {
+      getUserDashboardData((session.user as any).id).then((data) => {
         setStats(data.stats);
         setActivities(data.recentActivities);
         setLoading(false);
       });
     }
-  }, [session?.user?.id]);
+  }, [session]);
 
   const getTimeAgo = (timestamp: any) => {
     if (!timestamp) return "Just now";

@@ -48,8 +48,8 @@ export default function NotesPage() {
         setResult(data);
         setIsProcessing(false);
         
-        if (session?.user?.id) {
-          logUserActivity(session.user.id, "Notes", `Note Summary: ${file.name}`);
+        if ((session?.user as any)?.id) {
+          logUserActivity((session.user as any).id, "Notes", `Note Summary: ${file.name}`);
         }
       };
       reader.onerror = () => {

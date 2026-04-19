@@ -99,7 +99,7 @@ export const getUserDashboardData = async (userId: string) => {
     const userRef = doc(db, 'users', userId);
     const userSnap = await getDoc(userRef);
     
-    let stats = { questionsAsked: 0, topicsLearned: 0, quizAverage: 0 };
+    const stats = { questionsAsked: 0, topicsLearned: 0, quizAverage: 0 };
     if (userSnap.exists()) {
       const dbStats = userSnap.data().stats;
       if (dbStats) {
@@ -115,7 +115,7 @@ export const getUserDashboardData = async (userId: string) => {
     const q = query(activitiesRef, orderBy("createdAt", "desc"), limit(5));
     const querySnapshot = await getDocs(q);
     
-    let recentActivities: any[] = [];
+    const recentActivities: any[] = [];
     querySnapshot.forEach((doc) => {
       recentActivities.push({ id: doc.id, ...doc.data() });
     });
