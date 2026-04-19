@@ -7,7 +7,7 @@ import { Mail, Lock, ArrowRight, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Logo } from "@/components/Logo";
-import { signInWithPopup, sendSignInLinkToEmail } from "firebase/auth";
+import { signInWithPopup, sendSignInLinkToEmail, signInWithEmailAndPassword } from "firebase/auth";
 import { auth, googleProvider, syncUserToFirestore } from "@/firebase";
 
 export default function LoginPage() {
@@ -54,17 +54,37 @@ export default function LoginPage() {
     e.preventDefault();
     setLoading(true);
     
-    const res = await signIn("credentials", {
-      email,
-      password,
-      redirect: false,
-    });
+    try {
+      // Step 1: Sign in with Firebase explicitly to get accurate error messages
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      
+      // Step 2: Get ID token
+      const idToken = await userCredential.user.getIdToken();
+      
+      // Step 3: Pass token to NextAuth
+      const res = await signIn("credentials", {
+        idToken,
+        redirect: false,
+      });
 
-    if (res?.ok) {
-      router.push("/dashboard");
-    } else {
+      if (res?.ok) {
+        router.push("/dashboard");
+      } else {
+        setLoading(false);
+        alert("Login successful with Auth, but session creation failed.");
+      }
+    } catch (error: any) {
       setLoading(false);
-      alert("Login failed! Please check your credentials.");
+      console.error("Login Error:", error);
+      
+      // Provide meaningful error messages based on Firebase error codes
+      if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+        alert("Invalid email or password. Please try again.");
+      } else if (error.code === 'auth/too-many-requests') {
+        alert("Too many failed login attempts. Please try again later or use Magic Link.");
+      } else {
+        alert(error.message || "Login failed! Please check your credentials.");
+      }
     }
   };
 
