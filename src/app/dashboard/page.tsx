@@ -1,9 +1,40 @@
+"use client";
+
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { BookOpen, Calendar, Award, ArrowRight, FileText } from "lucide-react";
 import Link from "next/link";
 import { Logo } from "@/components/Logo";
+import { useSession } from "next-auth/react";
+import { useEffect, useState } from "react";
+import { getUserDashboardData } from "@/firebase";
 
 export default function DashboardPage() {
+  const { data: session } = useSession();
+  const [stats, setStats] = useState({ questionsAsked: 0, topicsLearned: 0, quizAverage: 0 });
+  const [activities, setActivities] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (session?.user?.id) {
+      getUserDashboardData(session.user.id).then((data) => {
+        setStats(data.stats);
+        setActivities(data.recentActivities);
+        setLoading(false);
+      });
+    }
+  }, [session?.user?.id]);
+
+  const getTimeAgo = (timestamp: any) => {
+    if (!timestamp) return "Just now";
+    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+    const seconds = Math.floor((new Date().getTime() - date.getTime()) / 1000);
+    
+    if (seconds < 60) return "Just now";
+    if (seconds < 3600) return `${Math.floor(seconds / 60)} minutes ago`;
+    if (seconds < 86400) return `${Math.floor(seconds / 3600)} hours ago`;
+    return `${Math.floor(seconds / 86400)} days ago`;
+  };
+
   return (
     <DashboardLayout>
       <div className="flex-1 flex flex-col gap-8 animate-fade-in relative z-10 w-full">
@@ -32,10 +63,10 @@ export default function DashboardPage() {
               <div className="p-3 bg-purple-500/10 text-purple-400 rounded-xl">
                 <BookOpen className="w-6 h-6" />
               </div>
-              <span className="text-2xl font-bold">12</span>
+              <span className="text-2xl font-bold">{loading ? "..." : stats.topicsLearned}</span>
             </div>
-            <h3 className="font-medium text-slate-200">Topics Learned</h3>
-            <p className="text-sm text-slate-500 mt-1">This month</p>
+            <h3 className="font-medium text-slate-200">Insights Gained</h3>
+            <p className="text-sm text-slate-500 mt-1">From Quizzes & Notes</p>
           </div>
           
           <div className="glass-panel p-6 flex flex-col hover:border-primary/50 transition-colors">
@@ -43,7 +74,7 @@ export default function DashboardPage() {
               <div className="p-3 bg-blue-500/10 text-blue-400 rounded-xl">
                 <Logo className="w-6 h-6" />
               </div>
-              <span className="text-2xl font-bold">85</span>
+              <span className="text-2xl font-bold">{loading ? "..." : stats.questionsAsked}</span>
             </div>
             <h3 className="font-medium text-slate-200">Questions Asked</h3>
             <p className="text-sm text-slate-500 mt-1">To the AI Assistant</p>
@@ -54,7 +85,7 @@ export default function DashboardPage() {
               <div className="p-3 bg-green-500/10 text-green-400 rounded-xl">
                 <Award className="w-6 h-6" />
               </div>
-              <span className="text-2xl font-bold">92%</span>
+              <span className="text-2xl font-bold">{loading ? "..." : `${stats.quizAverage}%`}</span>
             </div>
             <h3 className="font-medium text-slate-200">Quiz Average</h3>
             <p className="text-sm text-slate-500 mt-1">Practice score</p>
@@ -108,25 +139,31 @@ export default function DashboardPage() {
               <Calendar className="w-5 h-5 text-primary" />
               Recent Activity
             </h2>
-            <div className="glass-panel border border-white/5 flex flex-col divide-y divide-white/5">
-              {[
-                { title: "Photosynthesis Explanation", time: "2 hours ago", type: "Chat" },
-                { title: "History Chapter 4 Summary", time: "Yesterday", type: "Notes" },
-                { title: "Math MCQs Practice", time: "Yesterday", type: "Quiz" },
-              ].map((activity, i) => (
-                <div key={i} className="p-4 hover:bg-white/5 transition-colors flex justify-between items-center cursor-pointer">
-                  <div>
-                    <h4 className="font-medium text-sm text-slate-200">{activity.title}</h4>
-                    <p className="text-xs text-slate-500 mt-1">{activity.time}</p>
-                  </div>
-                  <span className="text-xs px-2 py-1 rounded bg-white/10 text-slate-300">
-                    {activity.type}
-                  </span>
+            <div className="glass-panel border border-white/5 flex flex-col divide-y divide-white/5 min-h-[200px]">
+              {loading ? (
+                <div className="flex items-center justify-center h-full text-slate-500">Loading...</div>
+              ) : activities.length === 0 ? (
+                <div className="flex items-center justify-center h-full p-8 text-center text-slate-500">
+                  No activity yet. Start chatting with Axom AI!
                 </div>
-              ))}
-              <div className="p-4 text-center">
-                <button className="text-sm text-primary hover:text-primary/80 font-medium">View all history</button>
-              </div>
+              ) : (
+                activities.map((activity) => (
+                  <div key={activity.id} className="p-4 hover:bg-white/5 transition-colors flex justify-between items-center cursor-pointer">
+                    <div className="flex-1 overflow-hidden pr-2">
+                      <h4 className="font-medium text-sm text-slate-200 truncate">{activity.title}</h4>
+                      <p className="text-xs text-slate-500 mt-1">{getTimeAgo(activity.createdAt)}</p>
+                    </div>
+                    <span className="text-xs px-2 py-1 rounded bg-white/10 text-slate-300 whitespace-nowrap">
+                      {activity.type}
+                    </span>
+                  </div>
+                ))
+              )}
+              {activities.length > 0 && (
+                <div className="p-4 text-center">
+                  <button className="text-sm text-primary hover:text-primary/80 font-medium">View all history</button>
+                </div>
+              )}
             </div>
           </div>
         </div>

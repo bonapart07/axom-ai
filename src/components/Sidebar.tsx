@@ -9,8 +9,8 @@ import { Logo } from "./Logo";
 
 const navItems = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { name: "AI Chat", href: "/chat", icon: MessageSquare },
   { name: "Notes Explainer", href: "/notes", icon: FileText },
+  { name: "AI Chat", href: "/chat", isLogo: true },
   { name: "Practice", href: "/practice", icon: BookOpen },
   { name: "Translate", href: "/translate", icon: Languages },
 ];
@@ -28,7 +28,6 @@ export function Sidebar() {
 
       <nav className="flex-1 px-4 space-y-2">
         {navItems.map((item) => {
-          const Icon = item.icon;
           const isActive = pathname === item.href || (pathname.startsWith(item.href) && item.href !== '/dashboard');
           
           return (
@@ -37,12 +36,19 @@ export function Sidebar() {
               href={item.href}
               className={clsx(
                 "flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium",
-                isActive 
-                  ? "bg-primary/20 text-primary border border-primary/30 shadow-[0_0_10px_rgba(79,70,229,0.1)]" 
-                  : "text-slate-400 hover:text-white hover:bg-white/5"
+                item.isLogo && !isActive ? "bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 shadow-[0_0_15px_rgba(79,70,229,0.15)]" : "",
+                isActive && !item.isLogo ? "bg-primary/20 text-primary border border-primary/30 shadow-[0_0_10px_rgba(79,70,229,0.1)]" : "",
+                isActive && item.isLogo ? "bg-primary text-white shadow-[0_0_20px_rgba(79,70,229,0.4)] border border-primary" : "",
+                !isActive && !item.isLogo ? "text-slate-400 hover:text-white hover:bg-white/5" : ""
               )}
             >
-              <Icon className="w-5 h-5" />
+              {item.isLogo ? (
+                <div className="w-5 h-5 flex items-center justify-center">
+                  <Logo className={clsx("w-6 h-6", isActive ? "text-white" : "text-primary")} />
+                </div>
+              ) : (
+                item.icon && <item.icon className="w-5 h-5" />
+              )}
               {item.name}
             </Link>
           );

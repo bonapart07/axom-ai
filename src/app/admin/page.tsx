@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { collection, getDocs, doc, updateDoc } from "firebase/firestore";
+import { collection, getDocs, doc, updateDoc, deleteDoc } from "firebase/firestore";
 import { db } from "@/firebase";
-import { Users, Shield, Zap, BookOpen, Search, RefreshCw } from "lucide-react";
+import { Users, Shield, Zap, BookOpen, Search, RefreshCw, Trash2 } from "lucide-react";
 
 export default function AdminPage() {
   const [users, setUsers] = useState<any[]>([]);
@@ -55,6 +55,19 @@ export default function AdminPage() {
     } catch (err) {
       console.error(err);
       alert("Failed to toggle unlimited mode");
+    }
+  };
+
+  const handleDeleteUser = async (userId: string, userEmail: string) => {
+    if (!confirm(`Are you sure you want to completely delete the database record for ${userEmail}?\n\nNote: If they have Google Authentication, they may still be able to log back in unless deleted from the Firebase Console.`)) return;
+    
+    try {
+      await deleteDoc(doc(db, "users", userId));
+      alert("User record deleted from database successfully.");
+      fetchUsers();
+    } catch (err) {
+      console.error(err);
+      alert("Failed to delete user from database.");
     }
   };
 
@@ -185,20 +198,31 @@ export default function AdminPage() {
                       </span>
                     </td>
                     <td className="p-4 text-right">
-                      <select 
-                        value="" 
-                        onChange={(e) => handleUpdateRole(user.id, user.plan, e.target.value)}
-                        className="bg-white/5 border border-white/10 text-slate-300 text-xs rounded-lg focus:outline-none focus:border-primary/50 px-2 py-2 cursor-pointer"
-                      >
-                        <option value="" disabled>Change Tier...</option>
-                        <option value="free" className="bg-slate-900">Downgrade to Free</option>
-                        <option value="premium" className="bg-slate-900">Promote to Premium</option>
-                        <option value="school" className="bg-slate-900">Promote to School</option>
-                      </select>
+                      <div className="flex flex-col gap-2 items-end">
+                        <select 
+                          value="" 
+                          onChange={(e) => handleUpdateRole(user.id, user.plan, e.target.value)}
+                          className="bg-white/5 border border-white/10 text-slate-300 text-xs rounded-lg focus:outline-none focus:border-primary/50 px-2 py-2 cursor-pointer w-36"
+                        >
+                          <option value="" disabled>Change Tier...</option>
+                          <option value="free" className="bg-slate-900">Downgrade to Free</option>
+                          <option value="premium" className="bg-slate-900">Promote to Premium</option>
+                          <option value="school" className="bg-slate-900">Promote to School</option>
+                        </select>
+                        
+                        <button
+                          onClick={() => handleDeleteUser(user.id, user.email)}
+                          className="flex items-center gap-1.5 text-xs text-red-400 hover:text-red-300 bg-red-400/10 hover:bg-red-400/20 px-3 py-1.5 rounded-lg transition-colors border border-red-400/20 w-36 justify-center"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          Delete User
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
               )}
+
             </tbody>
           </table>
         </div>

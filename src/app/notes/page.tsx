@@ -3,9 +3,12 @@
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { useState } from "react";
 import { UploadCloud, FileText, Sparkles, AlertCircle } from "lucide-react";
+import { useSession } from "next-auth/react";
+import { logUserActivity } from "@/firebase";
 import clsx from "clsx";
 
 export default function NotesPage() {
+  const { data: session } = useSession();
   const [file, setFile] = useState<File | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [result, setResult] = useState<{ summary: string; points: string[] } | null>(null);
@@ -44,6 +47,10 @@ export default function NotesPage() {
 
         setResult(data);
         setIsProcessing(false);
+        
+        if (session?.user?.id) {
+          logUserActivity(session.user.id, "Notes", `Note Summary: ${file.name}`);
+        }
       };
       reader.onerror = () => {
         throw new Error("Failed to read file.");

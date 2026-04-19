@@ -3,6 +3,8 @@
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { useState, useRef, useEffect } from "react";
 import { Send, Bot, Copy, BookOpen, Languages, Sparkles } from "lucide-react";
+import { useSession } from "next-auth/react";
+import { logUserActivity } from "@/firebase";
 import clsx from "clsx";
 
 type Message = {
@@ -24,6 +26,7 @@ const getMockResponse = (input: string) => {
 };
 
 export default function ChatPage() {
+  const { data: session } = useSession();
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "welcome",
@@ -60,6 +63,11 @@ export default function ChatPage() {
       
       if (data.reply) {
         setMessages(prev => [...prev, { id: (Date.now() + 1).toString(), role: "assistant", content: data.reply }]);
+        
+        // Log the activity to Dashboard
+        if (session?.user?.id) {
+          logUserActivity(session.user.id, "Chat", userMsg.content);
+        }
       } else {
         setMessages(prev => [...prev, { id: (Date.now() + 1).toString(), role: "assistant", content: "Error: " + (data.error || "Unknown Error") }]);
       }
@@ -97,6 +105,10 @@ export default function ChatPage() {
       
       if (data.reply) {
         setMessages(prev => [...prev, { id: (Date.now() + 1).toString(), role: "assistant", content: data.reply }]);
+        
+        if (session?.user?.id) {
+          logUserActivity(session.user.id, "Chat", `Action: ${action}`);
+        }
       } else {
         setMessages(prev => [...prev, { id: (Date.now() + 1).toString(), role: "assistant", content: "Error: " + (data.error || "Unknown Error") }]);
       }

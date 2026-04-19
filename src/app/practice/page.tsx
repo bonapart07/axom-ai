@@ -3,6 +3,8 @@
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { useState } from "react";
 import { BookOpen, Target, ChevronRight, CheckCircle2, RotateCcw } from "lucide-react";
+import { useSession } from "next-auth/react";
+import { logUserActivity } from "@/firebase";
 
 type Question = {
   id: number;
@@ -29,6 +31,7 @@ const mockQuestions: Record<string, Question[]> = {
 };
 
 export default function PracticePage() {
+  const { data: session } = useSession();
   const [topic, setTopic] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [quizState, setQuizState] = useState<"idle" | "playing" | "results">("idle");
@@ -159,9 +162,12 @@ export default function PracticePage() {
                     setCurrentQIndex(currentQIndex + 1);
                   } else {
                     setQuizState("results");
+                    if (session?.user?.id) {
+                      const finalScore = calculateScore();
+                      logUserActivity(session.user.id, "Quiz", `Practice: ${topic}`, { score: finalScore, total: questions.length });
+                    }
                   }
-                }}
-                disabled={selectedAnswers[currentQIndex] === undefined}
+                }}                disabled={selectedAnswers[currentQIndex] === undefined}
                 className="flex items-center gap-2 px-6 py-3 bg-white text-black font-semibold rounded-xl hover:bg-slate-200 transition-colors disabled:opacity-50"
               >
                 {currentQIndex === questions.length - 1 ? "Finish Quiz" : "Next Question"}
