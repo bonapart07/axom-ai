@@ -32,6 +32,7 @@ export default function SchoolDashboardPage() {
     if (session) {
       fetchProfile();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session]);
 
   const handleGenerateStudent = async () => {

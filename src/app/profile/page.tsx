@@ -31,9 +31,9 @@ export default function ProfilePage() {
 
   useEffect(() => {
     async function loadProfile() {
-      if (session?.user?.id || session?.user?.uid) {
-        const uid = (session.user as any).id || (session.user as any).uid;
-        const data = await getUserProfileInfo(uid);
+      if ((session?.user as any)?.id || (session?.user as any)?.uid) {
+        const uid = (session?.user as any)?.id || (session?.user as any)?.uid;
+        const data = await getUserProfileInfo(uid) as any;
         setProfile(data);
         if (data) {
           setEditName(data.name || "");
@@ -75,7 +75,7 @@ export default function ProfilePage() {
   };
 
   const handleSaveProfile = async () => {
-    if (!profile?.uid && !session?.user?.id) return;
+    if (!profile?.uid && !(session?.user as any)?.id) return;
     setIsSaving(true);
     const uid = profile?.uid || (session?.user as any).id;
     const success = await updateUserProfile(uid, { name: editName, photoURL: editPhotoURL });

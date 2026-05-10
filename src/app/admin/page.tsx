@@ -361,7 +361,7 @@ export default function AdminPage() {
                 onClick={() => handleResetUsage(editingUser.id)}
                 className="flex items-center gap-2 text-sm text-slate-400 hover:text-white transition-colors"
               >
-                <RotateCcw className="w-4 h-4" /> Reset Today's Usage (Currently {editingUser.usedToday || 0})
+                <RotateCcw className="w-4 h-4" /> Reset Today&apos;s Usage (Currently {editingUser.usedToday || 0})
               </button>
 
             </div>
