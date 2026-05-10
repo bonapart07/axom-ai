@@ -2,8 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, MessageSquare, FileText, BookOpen, Languages, LogOut } from "lucide-react";
+import { LayoutDashboard, MessageSquare, FileText, BookOpen, Languages, LogOut, GraduationCap } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
+import { useEffect, useState } from "react";
+import { getUserProfileInfo } from "@/firebase";
 import clsx from "clsx";
 import { Logo } from "./Logo";
 
@@ -18,6 +20,18 @@ const navItems = [
 export function Sidebar() {
   const pathname = usePathname();
   const { data: session } = useSession();
+  const [isSchool, setIsSchool] = useState(false);
+
+  useEffect(() => {
+    const userId = (session?.user as any)?.id;
+    if (userId) {
+      getUserProfileInfo(userId).then(data => {
+        if (data && data.plan === 'school') {
+          setIsSchool(true);
+        }
+      });
+    }
+  }, [session]);
 
   return (
     <aside className="w-64 border-r border-white/10 glass-panel border-y-0 border-l-0 rounded-none h-screen fixed left-0 top-0 flex flex-col pt-6 z-20 hidden md:flex">
@@ -54,6 +68,22 @@ export function Sidebar() {
           );
         })}
 
+        {/* Dynamically render School link if user is school */}
+        {isSchool && (
+          <Link
+            href="/school"
+            className={clsx(
+              "flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium mt-2",
+              pathname === '/school'
+                ? "bg-blue-500/20 text-blue-400 border border-blue-500/30 shadow-[0_0_10px_rgba(59,130,246,0.1)]" 
+                : "text-blue-400/70 hover:text-blue-400 hover:bg-blue-500/10"
+            )}
+          >
+            <GraduationCap className="w-5 h-5" />
+            School Portal
+          </Link>
+        )}
+
         {/* Dynamically render Admin link if user is admin */}
         {(session?.user as any)?.isAdmin && (
           <Link
@@ -72,19 +102,22 @@ export function Sidebar() {
       </nav>
 
       <div className="p-4 mt-auto border-t border-white/5">
-        <div className="flex items-center gap-3 px-4 py-3 mb-2">
+        <Link 
+          href="/profile"
+          className="flex items-center gap-3 px-4 py-3 mb-2 rounded-xl hover:bg-white/5 transition-colors group cursor-pointer"
+        >
           {session?.user?.image ? (
-            <img src={session.user.image} alt="User" className="w-10 h-10 rounded-full bg-white/10" />
+            <img src={session.user.image} alt="User" className="w-10 h-10 rounded-full bg-white/10 group-hover:ring-2 group-hover:ring-primary/50 transition-all" />
           ) : (
-            <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center group-hover:ring-2 group-hover:ring-primary/50 transition-all">
               <span className="text-xl">🎓</span>
             </div>
           )}
-          <div className="flex flex-col overflow-hidden">
-            <span className="text-sm font-medium truncate">{session?.user?.name || "Student"}</span>
-            <span className="text-xs text-slate-500 truncate">{session?.user?.email || "Offline Module"}</span>
+          <div className="flex flex-col overflow-hidden flex-1">
+            <span className="text-sm font-medium truncate group-hover:text-primary transition-colors">{session?.user?.name || "Student"}</span>
+            <span className="text-xs text-slate-500 truncate">View Profile</span>
           </div>
-        </div>
+        </Link>
         
         <button 
           onClick={() => signOut({ callbackUrl: '/' })}

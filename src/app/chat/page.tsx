@@ -4,7 +4,8 @@ import { DashboardLayout } from "@/components/DashboardLayout";
 import { useState, useRef, useEffect } from "react";
 import { Send, Bot, Copy, BookOpen, Languages, Sparkles } from "lucide-react";
 import { useSession } from "next-auth/react";
-import { logUserActivity } from "@/firebase";
+import { logUserActivity, getUserProfileInfo } from "@/firebase";
+import { UpgradeModal } from "@/components/UpgradeModal";
 import clsx from "clsx";
 
 type Message = {
@@ -36,6 +37,7 @@ export default function ChatPage() {
   ]);
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -45,6 +47,16 @@ export default function ChatPage() {
   const handleSend = async (e?: React.FormEvent) => {
     e?.preventDefault();
     if (!input.trim()) return;
+
+    // Check usage limits
+    const userId = (session?.user as any)?.id || (session?.user as any)?.uid;
+    if (userId) {
+      const profile = await getUserProfileInfo(userId);
+      if (profile && !profile.isUnlimited && (profile.usedToday || 0) >= (profile.dailyLimit || 5)) {
+        setShowUpgradeModal(true);
+        return;
+      }
+    }
 
     const userMsg: Message = { id: Date.now().toString(), role: "user", content: input };
     setMessages(prev => [...prev, userMsg]);
@@ -88,11 +100,31 @@ export default function ChatPage() {
     }
 
     let prompt = "";
-    if (action === "simplify") prompt = `Please simplify this explanation further in Assamese so a young student can easily understand: "${msgContent}"`;
-    if (action === "english") prompt = `Please translate and explain this previous response completely in English: "${msgContent}"`;
-    if (action === "example") prompt = `Please provide a clear, real-life example for this concept in Assamese: "${msgContent}"`;
+    let displayMessage = "";
+    if (action === "simplify") {
+      prompt = `Please simplify this explanation further in Assamese so a young student can easily understand: "${msgContent}"`;
+      displayMessage = "Simplify this explanation";
+    }
+    if (action === "english") {
+      prompt = `Please translate and explain this previous response completely in English: "${msgContent}"`;
+      displayMessage = "Explain this in English";
+    }
+    if (action === "example") {
+      prompt = `Please provide a clear, real-life example for this concept in Assamese: "${msgContent}"`;
+      displayMessage = "Give me an example";
+    }
 
-    const userMsg: Message = { id: Date.now().toString(), role: "user", content: prompt };
+    // Check usage limits
+    const userId = (session?.user as any)?.id || (session?.user as any)?.uid;
+    if (userId) {
+      const profile = await getUserProfileInfo(userId);
+      if (profile && !profile.isUnlimited && (profile.usedToday || 0) >= (profile.dailyLimit || 5)) {
+        setShowUpgradeModal(true);
+        return;
+      }
+    }
+
+    const userMsg: Message = { id: Date.now().toString(), role: "user", content: displayMessage };
     setMessages(prev => [...prev, userMsg]);
     setIsTyping(true);
 
@@ -111,7 +143,7 @@ export default function ChatPage() {
         const userId = (session?.user as any)?.id;
         if (userId) {
 
-          logUserActivity(userId, "Chat", `Action: $`);
+          logUserActivity(userId, "Chat", `Action: ${action}`);
         }
       } else {
         setMessages(prev => [...prev, { id: (Date.now() + 1).toString(), role: "assistant", content: "Error: " + (data.error || "Unknown Error") }]);
@@ -131,6 +163,7 @@ export default function ChatPage() {
 
   return (
     <DashboardLayout>
+      <UpgradeModal isOpen={showUpgradeModal} onClose={() => setShowUpgradeModal(false)} />
       <div className="flex flex-col h-[calc(100vh-6rem)] animate-fade-in relative z-10 w-full max-w-4xl mx-auto glass-panel border-white/10 mt-4 rounded-2xl overflow-hidden shadow-2xl">
         
         {/* Chat Header */}

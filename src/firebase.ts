@@ -2,14 +2,14 @@ import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
 import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, addDoc, query, orderBy, limit, getDocs, increment, serverTimestamp } from "firebase/firestore";
 
-// Your Firebase config
+// Your Firebase config securely loaded from environment variables
 const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "AIzaSyBxfbqojx77siLtSCIZmymTA_SLnX06RL8",
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || "axom-ai-f5abc.firebaseapp.com",
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "axom-ai-f5abc",
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || "axom-ai-f5abc.firebasestorage.app",
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || "1048797243842",
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || "1:1048797243842:web:4ba72d956ce8a925e68e5b",
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
 // Initialize Firebase
@@ -62,8 +62,25 @@ export const logUserActivity = async (userId: string, type: "Chat" | "Notes" | "
     
     // Update top level stats depending on activity type
     if (type === "Chat") {
+      // Fetch user doc first to check if we need to reset usedToday
+      const userSnap = await getDoc(userRef);
+      let newUsedToday = 1;
+      
+      if (userSnap.exists()) {
+        const data = userSnap.data();
+        const lastUpdated = new Date(data.lastActiveDate || data.updatedAt || new Date().toISOString());
+        const now = new Date();
+        
+        // If it's a new day, reset usedToday to 1. Otherwise, increment.
+        if (lastUpdated.toDateString() === now.toDateString()) {
+          newUsedToday = (data.usedToday || 0) + 1;
+        }
+      }
+
       await updateDoc(userRef, {
         "stats.questionsAsked": increment(1),
+        usedToday: newUsedToday,
+        lastActiveDate: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       });
     } else if (type === "Quiz" && scoreParams) {
@@ -120,12 +137,89 @@ export const getUserDashboardData = async (userId: string) => {
       recentActivities.push({ id: doc.id, ...doc.data() });
     });
 
-    return { stats, recentActivities };
+    const plan = userSnap.exists() ? userSnap.data().plan || 'free' : 'free';
+    const isUnlimited = userSnap.exists() ? userSnap.data().isUnlimited || false : false;
+
+    return { stats, recentActivities, plan, isUnlimited };
   } catch (error) {
     console.error("Error fetching dashboard data:", error);
     return { 
       stats: { questionsAsked: 0, topicsLearned: 0, quizAverage: 0 }, 
-      recentActivities: [] 
+      recentActivities: [],
+      plan: 'free',
+      isUnlimited: false
     };
   }
 };
+
+export const getUserProfileInfo = async (userId: string) => {
+  try {
+    const userRef = doc(db, 'users', userId);
+    const userSnap = await getDoc(userRef);
+    
+    if (userSnap.exists()) {
+      const data = userSnap.data();
+      
+      // Auto-downgrade logic if subscription has expired
+      let currentPlan = data.plan || 'free';
+      let currentLimit = data.dailyLimit ?? (currentPlan === 'premium' ? 100 : 5);
+      
+      if (currentPlan === 'premium' && data.subscriptionEnd) {
+        const end = new Date(data.subscriptionEnd).getTime();
+        const now = new Date().getTime();
+        if (now > end) {
+          // Subscription expired
+          currentPlan = 'free';
+          currentLimit = 5;
+          // Update the database to reflect the downgrade
+          await updateDoc(userRef, {
+            plan: 'free',
+            dailyLimit: 5,
+            updatedAt: new Date().toISOString()
+          });
+        }
+      }
+
+      // Provide default fallback values for missing fields
+      return {
+        ...data,
+        plan: currentPlan,
+        role: data.role || 'user',
+        dailyLimit: currentLimit,
+        usedToday: data.usedToday || 0,
+        isUnlimited: data.isUnlimited || false,
+        schoolName: data.schoolName || null,
+        subscriptionStart: data.subscriptionStart || null,
+        subscriptionEnd: data.subscriptionEnd || null,
+        createdAt: data.createdAt || data.updatedAt || new Date().toISOString(),
+
+        photoURL: data.photoURL || null,
+        stats: data.stats || {
+          questionsAsked: 0,
+          topicsLearned: 0,
+          quizTotalScore: 0, 
+          quizzesSubmitted: 0
+        }
+      };
+    }
+    return null;
+  } catch (error) {
+    console.error("Error fetching user profile info:", error);
+    return null;
+  }
+};
+
+export const updateUserProfile = async (userId: string, data: { name?: string, photoURL?: string }) => {
+  try {
+    const userRef = doc(db, 'users', userId);
+    await updateDoc(userRef, {
+      ...data,
+      updatedAt: new Date().toISOString()
+    });
+    return true;
+  } catch (error) {
+    console.error("Error updating user profile:", error);
+    return false;
+  }
+};
+

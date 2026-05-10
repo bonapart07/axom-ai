@@ -3,6 +3,9 @@
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { useState } from "react";
 import { ArrowRightLeft, Languages, Copy, Check } from "lucide-react";
+import { getUserProfileInfo, logUserActivity } from "@/firebase";
+import { useSession } from "next-auth/react";
+import { UpgradeModal } from "@/components/UpgradeModal";
 import clsx from "clsx";
 
 export default function TranslatePage() {
@@ -10,10 +13,23 @@ export default function TranslatePage() {
   const [outputText, setOutputText] = useState("");
   const [direction, setDirection] = useState<"en-as" | "as-en">("en-as");
   const [isTranslating, setIsTranslating] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [copied, setCopied] = useState(false);
+  const { data: session } = useSession();
 
   const handleTranslate = async () => {
     if (!inputText.trim()) return;
+
+    // Check usage limits
+    const userId = (session?.user as any)?.id || (session?.user as any)?.uid;
+    if (userId) {
+      const profile = await getUserProfileInfo(userId);
+      if (profile && !profile.isUnlimited && (profile.usedToday || 0) >= (profile.dailyLimit || 5)) {
+        setShowUpgradeModal(true);
+        return;
+      }
+    }
+
     setIsTranslating(true);
     
     try {
@@ -30,7 +46,14 @@ export default function TranslatePage() {
       if (data.error) throw new Error(data.error);
 
       setOutputText(data.translation);
+      
+      if (userId) {
+        logUserActivity(userId, "Translate" as any, `Translated to ${direction === "en-as" ? "Assamese" : "English"}`);
+      }
     } catch (error: any) {
+      if (userId) {
+        logUserActivity(userId, "Translate" as any, `Translated to ${direction === "en-as" ? "Assamese" : "English"}`);
+      }
       console.error(error);
       alert(error.message || "Translation failed.");
     } finally {
@@ -53,6 +76,7 @@ export default function TranslatePage() {
 
   return (
     <DashboardLayout>
+      <UpgradeModal isOpen={showUpgradeModal} onClose={() => setShowUpgradeModal(false)} />
       <div className="flex flex-col gap-6 w-full max-w-5xl mx-auto py-8">
         <header className="mb-4">
           <div className="flex items-center gap-3 mb-2">

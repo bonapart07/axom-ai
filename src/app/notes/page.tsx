@@ -4,13 +4,15 @@ import { DashboardLayout } from "@/components/DashboardLayout";
 import { useState } from "react";
 import { UploadCloud, FileText, Sparkles, AlertCircle } from "lucide-react";
 import { useSession } from "next-auth/react";
-import { logUserActivity } from "@/firebase";
+import { logUserActivity, getUserProfileInfo } from "@/firebase";
+import { UpgradeModal } from "@/components/UpgradeModal";
 import clsx from "clsx";
 
 export default function NotesPage() {
   const { data: session } = useSession();
   const [file, setFile] = useState<File | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [result, setResult] = useState<{ summary: string; points: string[] } | null>(null);
 
   const handleDrop = (e: React.DragEvent) => {
@@ -22,6 +24,17 @@ export default function NotesPage() {
 
   const handleUpload = async () => {
     if (!file) return;
+
+    // Check usage limits
+    const userId = (session?.user as any)?.id || (session?.user as any)?.uid;
+    if (userId) {
+      const profile = await getUserProfileInfo(userId);
+      if (profile && !profile.isUnlimited && (profile.usedToday || 0) >= (profile.dailyLimit || 5)) {
+        setShowUpgradeModal(true);
+        return;
+      }
+    }
+
     setIsProcessing(true);
     
     try {
@@ -66,6 +79,7 @@ export default function NotesPage() {
 
   return (
     <DashboardLayout>
+      <UpgradeModal isOpen={showUpgradeModal} onClose={() => setShowUpgradeModal(false)} />
       <div className="flex flex-col gap-6 animate-fade-in w-full max-w-5xl mx-auto py-8">
         <header>
           <div className="flex items-center gap-3 mb-2">

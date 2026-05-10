@@ -12,7 +12,7 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials) {
         try {
-          const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "AIzaSyBxfbqojx77siLtSCIZmymTA_SLnX06RL8";
+          const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
 
           // If logging in via Google or Magic Link, we pass the idToken directly from the frontend
           if (credentials?.idToken) {

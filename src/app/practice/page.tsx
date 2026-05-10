@@ -4,7 +4,8 @@ import { DashboardLayout } from "@/components/DashboardLayout";
 import { useState } from "react";
 import { BookOpen, Target, ChevronRight, CheckCircle2, RotateCcw } from "lucide-react";
 import { useSession } from "next-auth/react";
-import { logUserActivity } from "@/firebase";
+import { logUserActivity, getUserProfileInfo } from "@/firebase";
+import { UpgradeModal } from "@/components/UpgradeModal";
 
 type Question = {
   id: number;
@@ -34,6 +35,7 @@ export default function PracticePage() {
   const { data: session } = useSession();
   const [topic, setTopic] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [quizState, setQuizState] = useState<"idle" | "playing" | "results">("idle");
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentQIndex, setCurrentQIndex] = useState(0);
@@ -42,6 +44,16 @@ export default function PracticePage() {
   const handleGenerate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!topic.trim()) return;
+
+    // Check usage limits
+    const userId = (session?.user as any)?.id || (session?.user as any)?.uid;
+    if (userId) {
+      const profile = await getUserProfileInfo(userId);
+      if (profile && !profile.isUnlimited && (profile.usedToday || 0) >= (profile.dailyLimit || 5)) {
+        setShowUpgradeModal(true);
+        return;
+      }
+    }
     
     setIsGenerating(true);
     
@@ -85,6 +97,7 @@ export default function PracticePage() {
 
   return (
     <DashboardLayout>
+      <UpgradeModal isOpen={showUpgradeModal} onClose={() => setShowUpgradeModal(false)} />
       <div className="flex flex-col gap-6 w-full max-w-3xl mx-auto py-8">
         <header className="text-center mb-4 text-white">
           <div className="inline-flex justify-center items-center p-3 bg-green-500/20 rounded-2xl text-green-400 mb-4 border border-green-500/30">

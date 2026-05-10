@@ -1,7 +1,7 @@
 "use client";
 
 import { DashboardLayout } from "@/components/DashboardLayout";
-import { BookOpen, Calendar, Award, ArrowRight, FileText } from "lucide-react";
+import { BookOpen, Calendar, Award, ArrowRight, FileText, Zap } from "lucide-react";
 import Link from "next/link";
 import { Logo } from "@/components/Logo";
 import { useSession } from "next-auth/react";
@@ -12,6 +12,8 @@ export default function DashboardPage() {
   const { data: session } = useSession();
   const [stats, setStats] = useState({ questionsAsked: 0, topicsLearned: 0, quizAverage: 0 });
   const [activities, setActivities] = useState<any[]>([]);
+  const [userPlan, setUserPlan] = useState("free");
+  const [isUnlimited, setIsUnlimited] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -19,6 +21,8 @@ export default function DashboardPage() {
       getUserDashboardData((session?.user as any)?.id as string).then((data) => {
         setStats(data.stats);
         setActivities(data.recentActivities);
+        setUserPlan(data.plan || "free");
+        setIsUnlimited(data.isUnlimited || false);
         setLoading(false);
       });
     }
@@ -40,20 +44,34 @@ export default function DashboardPage() {
       <div className="flex-1 flex flex-col gap-8 animate-fade-in relative z-10 w-full">
         
         {/* Header */}
-        <header className="flex flex-col gap-2 pt-4">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary w-fit text-sm font-medium">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
-            </span>
-            Welcome back to Axom AI
+        {/* Header */}
+        <header className="flex justify-between items-start pt-4">
+          <div className="flex flex-col gap-2">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary w-fit text-sm font-medium">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+              </span>
+              Welcome back to Axom AI
+            </div>
+            <h1 className="text-3xl md:text-4xl font-bold tracking-tight mt-2">
+              আপোনাৰ <span className="text-gradient">Dashboard</span>
+            </h1>
+            <p className="text-slate-400 text-lg max-w-2xl">
+              Track your progress and continue where you left off. The AI is ready to assist you today.
+            </p>
           </div>
-          <h1 className="text-3xl md:text-4xl font-bold tracking-tight mt-2">
-            আপোনাৰ <span className="text-gradient">Dashboard</span>
-          </h1>
-          <p className="text-slate-400 text-lg max-w-2xl">
-            Track your progress and continue where you left off. The AI is ready to assist you today.
-          </p>
+
+          {/* Profile Icon */}
+          <Link href="/profile" className="flex-shrink-0 group mt-2 md:mt-0">
+             <div className="w-12 h-12 md:w-14 md:h-14 rounded-full border-2 border-white/10 bg-slate-800/50 flex items-center justify-center overflow-hidden shadow-[0_0_15px_rgba(0,0,0,0.5)] group-hover:border-primary/50 group-hover:shadow-[0_0_20px_rgba(79,70,229,0.3)] transition-all">
+               {session?.user?.image ? (
+                 <img src={session.user.image} alt="Profile" className="w-full h-full object-cover" />
+               ) : (
+                 <span className="text-2xl">🎓</span>
+               )}
+             </div>
+          </Link>
         </header>
 
         {/* Quick Stats Grid */}
@@ -95,10 +113,38 @@ export default function DashboardPage() {
         {/* Two Column Layout for Recent Activity and Quick Actions */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           
-          {/* Quick Actions */}
-          <div className="lg:col-span-2 flex flex-col gap-4">
-            <h2 className="text-xl font-semibold mb-2">Quick Actions</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* Main Content Area */}
+          <div className="lg:col-span-2 flex flex-col gap-6">
+            
+            {/* Upgrade Banner (Visible to Free Users Only) */}
+            {!loading && userPlan !== "premium" && !isUnlimited && (
+              <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-pink-500/10 border border-primary/20 p-6 flex flex-col sm:flex-row items-center justify-between gap-6 group">
+                {/* Background Glow */}
+                <div className="absolute -inset-2 bg-gradient-to-r from-primary to-purple-600 opacity-0 group-hover:opacity-10 blur-xl transition-opacity duration-500" />
+                
+                <div className="relative z-10 flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center shrink-0 border border-primary/30">
+                    <Zap className="w-6 h-6 text-primary animate-pulse" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-white mb-1">Upgrade to Axom AI Premium</h3>
+                    <p className="text-sm text-slate-400">Get up to 100 queries daily and priority AI access.</p>
+                  </div>
+                </div>
+                
+                <Link 
+                  href="/profile" 
+                  className="relative z-10 whitespace-nowrap px-6 py-2.5 rounded-xl bg-primary hover:bg-primary/90 text-white font-medium text-sm transition-all shadow-[0_0_20px_rgba(79,70,229,0.3)] hover:scale-105"
+                >
+                  View Plans
+                </Link>
+              </div>
+            )}
+
+            {/* Quick Actions */}
+            <div>
+              <h2 className="text-xl font-semibold mb-3">Quick Actions</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Link href="/chat" className="glass-panel p-6 group relative overflow-hidden">
                 <div className="absolute inset-0 bg-primary/0 group-hover:bg-primary/10 transition-colors" />
                 <div className="flex justify-between items-center relative z-10">
@@ -130,6 +176,7 @@ export default function DashboardPage() {
                   <ArrowRight className="w-5 h-5 text-slate-500 group-hover:text-purple-400 transition-colors group-hover:translate-x-1" />
                 </div>
               </Link>
+            </div>
             </div>
           </div>
           

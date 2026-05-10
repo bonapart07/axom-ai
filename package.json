@@ -12,10 +12,12 @@
     "@google/genai": "^1.50.1",
     "clsx": "^2.1.1",
     "firebase": "^12.12.0",
+    "firebase-admin": "^13.9.0",
     "framer-motion": "^12.38.0",
     "lucide-react": "^1.8.0",
     "next": "14.2.15",
     "next-auth": "^4.24.13",
+    "razorpay": "^2.9.6",
     "react": "^18",
     "react-dom": "^18",
     "tailwind-merge": "^3.5.0"
