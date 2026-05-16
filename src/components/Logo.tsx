@@ -34,9 +34,9 @@ export function Logo({ className = "w-8 h-8", variant = "default" }: { className
         {/* Japi Conical Hat Shape */}
         <path 
           d="M 50 20 L 85 65 Q 50 80 15 65 Z" 
-          fill={isWhite ? "rgba(255,255,255,0.1)" : "url(#glossyGradient)"} 
+          fill={isWhite ? "transparent" : "url(#glossyGradient)"} 
           stroke={isWhite ? "#ffffff" : "none"}
-          strokeWidth={isWhite ? "1" : "0"}
+          strokeWidth={isWhite ? "2" : "0"}
         />
         {!isWhite && (
           <path 

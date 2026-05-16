@@ -76,10 +76,11 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
               key={item.name}
               href={item.href}
               className={clsx(
-                "flex flex-col items-center justify-center p-1 rounded-xl transition-all relative flex-1 min-w-0",
-                isCenter ? "-mt-10" : "min-w-[50px]",
+                "flex flex-col items-center justify-center p-1 rounded-xl transition-all relative flex-1 min-w-0 select-none",
+                isCenter ? "-mt-10 active:scale-90" : "min-w-[50px] active:bg-white/5",
                 isActive && !isCenter ? "text-white" : "text-slate-400 hover:text-white"
               )}
+              style={{ WebkitTapHighlightColor: 'transparent' }}
             >
               {isCenter ? (
                 <div className={clsx(
