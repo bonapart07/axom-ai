@@ -17,7 +17,15 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Razorpay is not configured on this server." }, { status: 500 });
     }
 
-    const razorpay = new Razorpay({
+    // Handle potential ESM vs CJS import differences
+    const RazorpayConstructor = (Razorpay as any).default || Razorpay;
+
+    if (typeof RazorpayConstructor !== 'function') {
+      console.error("Razorpay SDK is not a constructor:", typeof RazorpayConstructor);
+      return NextResponse.json({ error: "Internal payment SDK error" }, { status: 500 });
+    }
+
+    const razorpay = new RazorpayConstructor({
       key_id: key_id,
       key_secret: key_secret,
     });
