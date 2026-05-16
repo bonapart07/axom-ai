@@ -18,7 +18,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Missing required parameters" }, { status: 400 });
     }
 
-    const secret = process.env.RAZORPAY_KEY_SECRET;
+    const secret = (process.env.RAZORPAY_KEY_SECRET || "").replace(/['"]+/g, '');
     if (!secret) {
       console.error("Razorpay secret is missing in environment variables.");
       return NextResponse.json({ error: "Server configuration error" }, { status: 500 });

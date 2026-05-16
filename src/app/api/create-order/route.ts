@@ -9,14 +9,17 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Amount must be at least 100 paise" }, { status: 400 });
     }
 
-    if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
+    const key_id = (process.env.RAZORPAY_KEY_ID || "").replace(/['"]+/g, '');
+    const key_secret = (process.env.RAZORPAY_KEY_SECRET || "").replace(/['"]+/g, '');
+
+    if (!key_id || !key_secret) {
       console.error("Razorpay API keys are missing in the environment variables.");
       return NextResponse.json({ error: "Razorpay is not configured on this server." }, { status: 500 });
     }
 
     const razorpay = new Razorpay({
-      key_id: process.env.RAZORPAY_KEY_ID,
-      key_secret: process.env.RAZORPAY_KEY_SECRET,
+      key_id: key_id,
+      key_secret: key_secret,
     });
 
     const options = {
