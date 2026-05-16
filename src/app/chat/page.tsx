@@ -170,7 +170,7 @@ export default function ChatPage() {
   return (
     <DashboardLayout>
       <UpgradeModal isOpen={showUpgradeModal} onClose={() => setShowUpgradeModal(false)} />
-      <div className="flex flex-col h-[calc(100vh-6rem)] animate-fade-in relative z-10 w-full max-w-4xl mx-auto glass-panel border-white/10 mt-4 rounded-2xl overflow-hidden shadow-2xl">
+      <div className="flex flex-col h-[calc(100dvh-130px)] md:h-[calc(100vh-8rem)] animate-fade-in relative z-10 w-full max-w-4xl mx-auto glass-panel border-white/10 md:mt-4 rounded-2xl overflow-hidden shadow-2xl">
         
         {/* Chat Header */}
         <div className="p-4 border-b border-white/10 flex items-center gap-3 bg-white/5 backdrop-blur-md">

@@ -6,7 +6,7 @@ import { useEffect } from "react";
 import { Sidebar } from "./Sidebar";
 import { Logo } from "./Logo";
 import Link from "next/link";
-import { LayoutDashboard, MessageSquare, FileText, BookOpen, Languages, User } from "lucide-react";
+import { LayoutDashboard, MessageSquare, FileText, BookOpen, Languages, User, GraduationCap } from "lucide-react";
 import clsx from "clsx";
 
 const navItems = [
@@ -15,10 +15,11 @@ const navItems = [
   { name: "AI Chat", href: "/chat", isLogo: true },
   { name: "Quiz", href: "/practice", icon: BookOpen },
   { name: "Profile", href: "/profile", icon: User },
+  { name: "School", href: "/school", icon: GraduationCap, schoolOnly: true },
 ];
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const { status } = useSession();
+  const { data: session, status } = useSession();
   const router = useRouter();
   const pathname = usePathname();
 
@@ -66,7 +67,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
       {/* Mobile Bottom Navigation */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 glass-panel border-t border-white/10 p-2 z-50 flex items-center justify-around bg-black/95 backdrop-blur-xl pb-safe">
-        {navItems.map((item) => {
+        {navItems.filter(item => !item.schoolOnly || (session?.user as any)?.plan === 'school').map((item) => {
           const isActive = pathname === item.href || (pathname.startsWith(item.href) && item.href !== '/dashboard');
           const isCenter = item.isLogo;
           
@@ -75,22 +76,24 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
               key={item.name}
               href={item.href}
               className={clsx(
-                "flex flex-col items-center justify-center p-2 rounded-xl transition-all relative flex-1",
-                isCenter ? "-mt-8" : "min-w-[56px]",
+                "flex flex-col items-center justify-center p-1 rounded-xl transition-all relative flex-1 min-w-0",
+                isCenter ? "-mt-10" : "min-w-[50px]",
                 isActive && !isCenter ? "text-white" : "text-slate-400 hover:text-white"
               )}
             >
               {isCenter ? (
                 <div className={clsx(
-                  "w-14 h-14 rounded-full flex items-center justify-center shadow-[0_0_20px_rgba(79,70,229,0.4)] border-4 border-[#0b0c10] mb-1 transition-transform hover:scale-105",
-                  isActive ? "bg-primary" : "bg-primary/80"
+                  "w-16 h-16 rounded-full flex items-center justify-center shadow-[0_0_25px_rgba(79,70,229,0.5)] border-4 border-[#000000] mb-1 transition-transform hover:scale-110",
+                  isActive ? "bg-primary" : "bg-primary/90"
                 )}>
-                  <Logo className="w-8 h-8 text-white filter brightness-200" />
+                  <div className="w-9 h-9 invert brightness-0">
+                    <Logo className="w-full h-full" />
+                  </div>
                 </div>
               ) : (
                 item.icon && <item.icon className="w-5 h-5 mb-1" />
               )}
-              <span className={clsx("font-medium", isCenter ? "text-[11px] text-primary font-bold shadow-sm" : "text-[10px]")}>
+              <span className={clsx("font-medium truncate w-full text-center px-1", isCenter ? "text-[10px] text-primary font-bold" : "text-[9px]")}>
                 {item.name}
               </span>
             </Link>

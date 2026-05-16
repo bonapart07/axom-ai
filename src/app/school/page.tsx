@@ -72,7 +72,19 @@ export default function SchoolDashboardPage() {
     );
   }
 
-  if (!profile) return null;
+  if (!profile && !loading) {
+    return (
+      <DashboardLayout>
+        <div className="flex flex-col items-center justify-center h-[60vh] text-center p-6">
+          <GraduationCap className="w-16 h-16 text-slate-700 mb-4" />
+          <h2 className="text-xl font-bold text-white mb-2">Access Restricted</h2>
+          <p className="text-slate-400 max-w-xs">
+            This portal is reserved for students with School Access. Please contact your institution for credentials.
+          </p>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   const maxAccounts = profile.maxStudentAccounts || 0;
   const createdAccounts = profile.createdStudentAccounts || 0;

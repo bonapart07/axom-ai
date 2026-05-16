@@ -293,7 +293,7 @@ export default function DashboardPage() {
               )}
               {activities.length > 0 && (
                 <div className="p-4 text-center">
-                  <button className="text-sm text-primary hover:text-primary/80 font-medium">View all history</button>
+                  <Link href="/chat" className="text-sm text-primary hover:text-primary/80 font-medium">View all history</Link>
                 </div>
               )}
             </div>
