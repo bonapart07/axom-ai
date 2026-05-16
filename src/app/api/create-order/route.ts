@@ -37,9 +37,17 @@ export async function POST(req: Request) {
       amount: order.amount,
     });
   } catch (error: any) {
-    console.error("Razorpay Order Creation Error:", error);
+    console.error("CRITICAL: Razorpay Order Creation Error:", {
+      message: error.message,
+      code: error.code,
+      stack: error.stack,
+      env_present: {
+        key_id: !!process.env.RAZORPAY_KEY_ID,
+        key_secret: !!process.env.RAZORPAY_KEY_SECRET
+      }
+    });
     return NextResponse.json(
-      { error: "Internal Server Error" },
+      { error: `Payment gateway error: ${error.message || "Unknown error"}` },
       { status: 500 }
     );
   }
