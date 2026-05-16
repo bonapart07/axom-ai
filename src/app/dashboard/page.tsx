@@ -190,7 +190,7 @@ export default function DashboardPage() {
                           description: "Monthly Subscription",
                           order_id: orderData.id,
                           handler: async function (response: any) {
-                            const userId = session?.user?.id || (session?.user as any)?.uid;
+                            const userId = (session?.user as any)?.id || (session?.user as any)?.uid;
                             const verifyRes = await fetch("/api/verify-payment", {
                               method: "POST", headers: { "Content-Type": "application/json" },
                               body: JSON.stringify({ ...response, userId, amount: orderData.amount })
