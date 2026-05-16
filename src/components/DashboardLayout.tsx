@@ -86,9 +86,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                   "w-16 h-16 rounded-full flex items-center justify-center shadow-[0_0_25px_rgba(79,70,229,0.5)] border-4 border-[#000000] mb-1 transition-transform hover:scale-110",
                   isActive ? "bg-primary" : "bg-primary/90"
                 )}>
-                  <div className="w-9 h-9 invert brightness-0">
-                    <Logo className="w-full h-full" />
-                  </div>
+                  <Logo className="w-10 h-10" variant="white" />
                 </div>
               ) : (
                 item.icon && <item.icon className="w-5 h-5 mb-1" />
