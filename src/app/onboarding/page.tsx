@@ -51,7 +51,8 @@ export default function OnboardingPage() {
                 setFormData({
                   name: profile?.name || session.user?.name || "",
                   class: profile?.class || "",
-                  district: profile?.district || ""
+                  district: profile?.district || "",
+                  acceptedTerms: false
                 });
                 setLoading(false);
               }
@@ -71,7 +72,7 @@ export default function OnboardingPage() {
         return () => unsubscribe();
       });
     }
-  }, [session, status, router]);
+  }, [session, status, router, loading]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

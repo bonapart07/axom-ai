@@ -203,6 +203,7 @@ export const getUserProfileInfo = async (userId: string) => {
         createdAt: data.createdAt || data.updatedAt || new Date().toISOString(),
 
         photoURL: data.photoURL || null,
+        name: data.name || null,
         stats: data.stats || {
           questionsAsked: 0,
           topicsLearned: 0,

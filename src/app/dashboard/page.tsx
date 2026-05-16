@@ -55,7 +55,7 @@ export default function DashboardPage() {
         return () => unsubscribe();
       });
     }
-  }, [session, router]);
+  }, [session, router, loading]);
 
   const getTimeAgo = (timestamp: any) => {
     if (!timestamp) return "Just now";
