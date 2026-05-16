@@ -8,13 +8,15 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Amount must be at least 100 paise" }, { status: 400 });
     }
 
-    const key_id = (process.env.RAZORPAY_KEY_ID || "").replace(/['"]+/g, '');
-    const key_secret = (process.env.RAZORPAY_KEY_SECRET || "").replace(/['"]+/g, '');
+    const key_id = (process.env.RAZORPAY_KEY_ID || "").replace(/['"]+/g, '').trim();
+    const key_secret = (process.env.RAZORPAY_KEY_SECRET || "").replace(/['"]+/g, '').trim();
 
     if (!key_id || !key_secret) {
       console.error("Razorpay API keys are missing in the environment variables.");
       return NextResponse.json({ error: "Razorpay is not configured on this server." }, { status: 500 });
     }
+
+    console.log("Using Razorpay Key ID starting with:", key_id.substring(0, 8));
 
     // Create order using direct fetch to avoid SDK issues in serverless
     const auth = Buffer.from(`${key_id}:${key_secret}`).toString("base64");
