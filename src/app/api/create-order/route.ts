@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import Razorpay from "razorpay";
 
 export async function POST(req: Request) {
   try {
@@ -17,35 +16,33 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Razorpay is not configured on this server." }, { status: 500 });
     }
 
-    // Handle potential ESM vs CJS import differences
-    const RazorpayConstructor = (Razorpay as any).default || Razorpay;
-
-    if (typeof RazorpayConstructor !== 'function') {
-      console.error("Razorpay SDK is not a constructor:", typeof RazorpayConstructor);
-      return NextResponse.json({ error: "Internal payment SDK error" }, { status: 500 });
-    }
-
-    const razorpay = new RazorpayConstructor({
-      key_id: key_id,
-      key_secret: key_secret,
+    // Create order using direct fetch to avoid SDK issues in serverless
+    const auth = Buffer.from(`${key_id}:${key_secret}`).toString("base64");
+    
+    const razorpayResponse = await fetch("https://api.razorpay.com/v1/orders", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Basic ${auth}`,
+      },
+      body: JSON.stringify({
+        amount: Math.round(amount),
+        currency: "INR",
+        receipt: `receipt_${Date.now()}_${Math.random().toString(36).substring(7)}`,
+      }),
     });
 
-    const options = {
-      amount: Math.round(amount).toString(), // amount in smallest currency unit (paise)
-      currency: "INR",
-      receipt: `receipt_${Date.now()}_${Math.random().toString(36).substring(7)}`,
-    };
+    const orderData = await razorpayResponse.json();
 
-    const order = await razorpay.orders.create(options);
-
-    if (!order) {
-      return NextResponse.json({ error: "Failed to create order" }, { status: 500 });
+    if (!razorpayResponse.ok) {
+      console.error("Razorpay API Error:", orderData);
+      return NextResponse.json({ error: orderData.error?.description || "Payment gateway error" }, { status: 500 });
     }
 
     return NextResponse.json({
-      id: order.id,
-      currency: order.currency,
-      amount: order.amount,
+      id: orderData.id,
+      currency: orderData.currency,
+      amount: orderData.amount,
     });
   } catch (error: any) {
     console.error("CRITICAL: Razorpay Order Creation Error:", {
