@@ -34,7 +34,9 @@ export function Logo({ className = "w-8 h-8", variant = "default" }: { className
         {/* Japi Conical Hat Shape */}
         <path 
           d="M 50 20 L 85 65 Q 50 80 15 65 Z" 
-          fill={isWhite ? "#ffffff" : "url(#glossyGradient)"} 
+          fill={isWhite ? "rgba(255,255,255,0.1)" : "url(#glossyGradient)"} 
+          stroke={isWhite ? "#ffffff" : "none"}
+          strokeWidth={isWhite ? "1" : "0"}
         />
         {!isWhite && (
           <path 
@@ -42,21 +44,20 @@ export function Logo({ className = "w-8 h-8", variant = "default" }: { className
             fill="url(#mirrorHighlight)" 
           />
         )}
-
         
         {/* Japi Bottom Brim Detail */}
         <path 
           d="M 10 65 Q 50 85 90 65 Q 50 75 10 65" 
-          fill="#ffffff" 
+          fill={isWhite ? "#ffffff" : "#ffffff"} 
         />
 
         {/* Japi Top Decoration (Tassel approximation) */}
         <circle cx="50" cy="18" r="4" fill="#ffffff" />
         
         {/* Abstract Tech Lines over Japi */}
-        <path d="M 50 20 L 50 72" stroke="#ffffff" strokeWidth="2" strokeOpacity="0.5" />
-        <path d="M 32 42 L 68 42" stroke="#ffffff" strokeWidth="2" strokeOpacity="0.5" />
-        <path d="M 23 55 L 77 55" stroke="#ffffff" strokeWidth="2" strokeOpacity="0.5" />
+        <path d="M 50 20 L 50 72" stroke="#ffffff" strokeWidth="2" strokeOpacity={isWhite ? "1" : "0.5"} />
+        <path d="M 32 42 L 68 42" stroke="#ffffff" strokeWidth="2" strokeOpacity={isWhite ? "1" : "0.5"} />
+        <path d="M 23 55 L 77 55" stroke="#ffffff" strokeWidth="2" strokeOpacity={isWhite ? "1" : "0.5"} />
       </svg>
     </div>
   );
