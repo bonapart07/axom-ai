@@ -3,9 +3,9 @@
 import { signIn } from "next-auth/react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Mail, Lock, ArrowRight, User, Sparkles } from "lucide-react";
+import { Mail, Lock, ArrowRight, User, Sparkles, AlertCircle } from "lucide-react";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Logo } from "@/components/Logo";
 import { createUserWithEmailAndPassword, updateProfile, signInWithPopup, sendSignInLinkToEmail } from "firebase/auth";
 import { auth, googleProvider, syncUserToFirestore } from "@/firebase";
@@ -16,6 +16,7 @@ export default function SignupPage() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [magicLinkSent, setMagicLinkSent] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
   const handleSignup = async (e: React.FormEvent) => {
@@ -45,13 +46,13 @@ export default function SignupPage() {
         router.push("/dashboard");
       } else {
         setLoading(false);
-        alert("Account created, but automatic login failed. Please go to Login page.");
+        setError("Account created, but automatic login failed. Please go to Login page.");
         router.push("/login");
       }
     } catch (error: any) {
       setLoading(false);
       console.error("Signup error:", error);
-      alert(error.message || "Failed to create account. Please try again.");
+      setError(error.message || "Failed to create account. Please try again.");
     }
   };
 
@@ -71,18 +72,18 @@ export default function SignupPage() {
         router.push("/dashboard");
       } else {
         setLoading(false);
-        alert("Google Login sync failed.");
+        setError("Google Login sync failed.");
       }
     } catch (error: any) {
       setLoading(false);
       console.error("Google login failed:", error);
-      alert(error.message || "Failed to login with Google");
+      setError(error.message || "Failed to login with Google");
     }
   };
 
   const handleMagicLink = async () => {
     if (!email) {
-      alert("Please enter your email first to receive a magic link.");
+      setError("Please enter your email first to receive a magic link.");
       return;
     }
     setLoading(true);
@@ -95,11 +96,12 @@ export default function SignupPage() {
       window.localStorage.setItem('emailForSignIn', email);
       setMagicLinkSent(true);
       setLoading(false);
+      setError(null);
       alert(`Magic link sent! Please check your inbox for ${email}`);
     } catch (error: any) {
       setLoading(false);
       console.error("Magic link error:", error);
-      alert(error.message || "Failed to send magic link.");
+      setError(error.message || "Failed to send magic link.");
     }
   };
 
@@ -129,6 +131,22 @@ export default function SignupPage() {
 
         <h2 className="text-3xl font-bold text-center mb-2">Create Account</h2>
         <p className="text-slate-400 text-center mb-8 text-sm">Join us and start learning today.</p>
+        
+        <AnimatePresence>
+          {error && (
+            <motion.div 
+              initial={{ opacity: 0, height: 0, marginBottom: 0 }}
+              animate={{ opacity: 1, height: "auto", marginBottom: 20 }}
+              exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+              className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 flex items-center gap-3 text-red-400 text-sm overflow-hidden"
+            >
+              <div className="w-5 h-5 rounded-full bg-red-500/20 flex items-center justify-center shrink-0">
+                <span className="font-bold">!</span>
+              </div>
+              {error}
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <form onSubmit={handleSignup} className="space-y-4">
           <div>

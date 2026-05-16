@@ -3,9 +3,9 @@
 import { signIn } from "next-auth/react";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Mail, Lock, ArrowRight, Sparkles } from "lucide-react";
+import { Mail, Lock, ArrowRight, Sparkles, AlertCircle } from "lucide-react";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Logo } from "@/components/Logo";
 import { signInWithPopup, sendSignInLinkToEmail, signInWithEmailAndPassword } from "firebase/auth";
 import { auth, googleProvider, syncUserToFirestore } from "@/firebase";
@@ -15,6 +15,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [magicLinkSent, setMagicLinkSent] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -38,7 +39,7 @@ export default function LoginPage() {
                 router.push("/dashboard");
               } else {
                 setLoading(false);
-                alert("Magic Link Login sync failed.");
+                setError("Magic Link Login sync failed.");
               }
             })
             .catch((error) => {
@@ -71,7 +72,7 @@ export default function LoginPage() {
         router.push("/dashboard");
       } else {
         setLoading(false);
-        alert("Login successful with Auth, but session creation failed.");
+        setError("Login successful with Auth, but session creation failed.");
       }
     } catch (error: any) {
       setLoading(false);
@@ -79,11 +80,11 @@ export default function LoginPage() {
       
       // Provide meaningful error messages based on Firebase error codes
       if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
-        alert("Invalid email or password. Please try again.");
+        setError("Invalid email or password. Please try again.");
       } else if (error.code === 'auth/too-many-requests') {
-        alert("Too many failed login attempts. Please try again later or use Magic Link.");
+        setError("Too many failed login attempts. Please try again later or use Magic Link.");
       } else {
-        alert(error.message || "Login failed! Please check your credentials.");
+        setError(error.message || "Login failed! Please check your credentials.");
       }
     }
   };
@@ -104,18 +105,18 @@ export default function LoginPage() {
         router.push("/dashboard");
       } else {
         setLoading(false);
-        alert("Google Login sync failed.");
+        setError("Google Login sync failed.");
       }
     } catch (error: any) {
       setLoading(false);
       console.error("Google login failed:", error);
-      alert(error.message || "Failed to login with Google");
+      setError(error.message || "Failed to login with Google");
     }
   };
 
   const handleMagicLink = async () => {
     if (!email) {
-      alert("Please enter your email first to receive a magic link.");
+      setError("Please enter your email first to receive a magic link.");
       return;
     }
     setLoading(true);
@@ -128,11 +129,12 @@ export default function LoginPage() {
       window.localStorage.setItem('emailForSignIn', email);
       setMagicLinkSent(true);
       setLoading(false);
+      setError(null);
       alert(`Magic link sent! Please check your inbox for ${email}`);
     } catch (error: any) {
       setLoading(false);
       console.error("Magic link error:", error);
-      alert(error.message || "Failed to send magic link.");
+      setError(error.message || "Failed to send magic link.");
     }
   };
 
@@ -162,6 +164,22 @@ export default function LoginPage() {
 
         <h2 className="text-3xl font-bold text-center mb-2">Welcome Back</h2>
         <p className="text-slate-400 text-center mb-8 text-sm">Sign in to continue your learning journey.</p>
+        
+        <AnimatePresence>
+          {error && (
+            <motion.div 
+              initial={{ opacity: 0, height: 0, marginBottom: 0 }}
+              animate={{ opacity: 1, height: "auto", marginBottom: 20 }}
+              exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+              className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 flex items-center gap-3 text-red-400 text-sm overflow-hidden"
+            >
+              <div className="w-5 h-5 rounded-full bg-red-500/20 flex items-center justify-center shrink-0">
+                <span className="font-bold">!</span>
+              </div>
+              {error}
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
