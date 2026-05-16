@@ -5,13 +5,13 @@ export async function POST(req: Request) {
   try {
     const { amount } = await req.json();
 
-    if (!amount) {
-      return NextResponse.json({ error: "Amount is required" }, { status: 400 });
+    if (!amount || amount < 100) {
+      return NextResponse.json({ error: "Amount must be at least 100 paise" }, { status: 400 });
     }
 
     if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
       console.error("Razorpay API keys are missing in the environment variables.");
-      return NextResponse.json({ error: "Server configuration error" }, { status: 500 });
+      return NextResponse.json({ error: "Razorpay is not configured on this server." }, { status: 500 });
     }
 
     const razorpay = new Razorpay({
@@ -20,9 +20,9 @@ export async function POST(req: Request) {
     });
 
     const options = {
-      amount: amount.toString(), // amount in smallest currency unit (paise)
+      amount: Math.round(amount).toString(), // amount in smallest currency unit (paise)
       currency: "INR",
-      receipt: `receipt_${Date.now()}`,
+      receipt: `receipt_${Date.now()}_${Math.random().toString(36).substring(7)}`,
     };
 
     const order = await razorpay.orders.create(options);

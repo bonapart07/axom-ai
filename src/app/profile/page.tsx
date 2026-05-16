@@ -148,7 +148,7 @@ export default function ProfilePage() {
       }
 
       const options = {
-        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "YOUR_TEST_KEY_HERE",
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
         amount: orderData.amount,
         currency: orderData.currency,
         name: "Axom AI Study Assistant",
