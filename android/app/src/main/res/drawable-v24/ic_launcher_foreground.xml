@@ -1,0 +1,48 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Background is handled by ic_launcher_background.xml -->
+
+    <!-- Outer Circle -->
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="1.2"
+        android:pathData="M54,54m-42,0a42,42 0,1 1,84 0a42,42 0,1 1,-84 0" />
+
+    <!-- Apex Dot -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,26m-3,0a3,3 0,1 1,6 0a3,3 0,1 1,-6 0" />
+
+    <!-- Pyramid Segments -->
+    <!-- Top Segment -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:fillAlpha="0.8"
+        android:pathData="M54,29 L46,45 L62,45 Z" />
+    <!-- Middle Segment -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:fillAlpha="0.6"
+        android:pathData="M45,47 L37,63 L71,63 L63,47 Z" />
+    <!-- Bottom Segment -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:fillAlpha="0.4"
+        android:pathData="M36,65 L28,81 L80,81 L72,65 Z" />
+
+    <!-- Vertical Line -->
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="1"
+        android:pathData="M54,29 L54,81" />
+
+    <!-- Curved Bottom (Smile/Base) -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M24,78 Q54,92 84,78 L84,82 Q54,96 24,82 Z" />
+
+</vector>

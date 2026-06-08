@@ -1,10 +1,28 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
+import { checkPremiumAccess } from "@/lib/premium";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 
 export async function POST(req: Request) {
   try {
+    const session = await getServerSession(authOptions);
+    const userId = (session?.user as any)?.id;
+
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized. Please login." }, { status: 401 });
+    }
+
+    const { isPremium, limit, usedToday } = await checkPremiumAccess(userId);
+    if (usedToday >= limit) {
+      return NextResponse.json(
+        { error: "Daily usage limit reached. Please upgrade to Premium." },
+        { status: 403 }
+      );
+    }
+
     const { fileData, mimeType } = await req.json();
 
     if (!fileData || !mimeType) {

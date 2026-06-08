@@ -1,33 +1,63 @@
 "use client";
 
-import { signIn } from "next-auth/react";
+import { signIn, useSession } from "next-auth/react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Mail, Lock, ArrowRight, User, Sparkles, AlertCircle } from "lucide-react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { Logo } from "@/components/Logo";
-import { createUserWithEmailAndPassword, updateProfile, signInWithPopup, sendSignInLinkToEmail } from "firebase/auth";
+import { createUserWithEmailAndPassword, updateProfile, signInWithPopup, signInWithRedirect, getRedirectResult } from "firebase/auth";
 import { auth, googleProvider, syncUserToFirestore } from "@/firebase";
+import { useEffect } from "react";
 
 export default function SignupPage() {
+  const { data: session, status } = useSession();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [magicLinkSent, setMagicLinkSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+
+  useEffect(() => {
+    if (status === "authenticated") {
+      router.push("/dashboard");
+    }
+  }, [status, router]);
+
+  useEffect(() => {
+    const checkRedirect = async () => {
+      try {
+        const result = await getRedirectResult(auth);
+        if (result) {
+          setLoading(true);
+          await syncUserToFirestore(result.user);
+          const idToken = await result.user.getIdToken();
+          const res = await signIn("credentials", {
+            idToken,
+            redirect: false,
+          });
+          if (res?.ok) {
+            router.push("/dashboard");
+          } else {
+            setLoading(false);
+            setError("Google Login sync failed.");
+          }
+        }
+      } catch (error: any) {
+        console.error("Redirect result error:", error);
+      }
+    };
+    checkRedirect();
+  }, [router]);
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     
     try {
-      // 1. Create the user in Firebase
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      
-      // 2. Update their display name and sync to db
       if (userCredential.user) {
         if (name) {
           await updateProfile(userCredential.user, { displayName: name });
@@ -35,7 +65,6 @@ export default function SignupPage() {
         await syncUserToFirestore(userCredential.user, name);
       }
 
-      // 3. Immediately sign them in using our NextAuth integration
       const res = await signIn("credentials", {
         email,
         password,
@@ -59,49 +88,28 @@ export default function SignupPage() {
   const handleGoogleLogin = async () => {
     setLoading(true);
     try {
-      const result = await signInWithPopup(auth, googleProvider);
-      await syncUserToFirestore(result.user);
-      const idToken = await result.user.getIdToken();
-      
-      const res = await signIn("credentials", {
-        idToken,
-        redirect: false,
-      });
-
-      if (res?.ok) {
-        router.push("/dashboard");
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      if (isMobile) {
+        await signInWithRedirect(auth, googleProvider);
       } else {
-        setLoading(false);
-        setError("Google Login sync failed.");
+        const result = await signInWithPopup(auth, googleProvider);
+        await syncUserToFirestore(result.user);
+        const idToken = await result.user.getIdToken();
+        const res = await signIn("credentials", {
+          idToken,
+          redirect: false,
+        });
+        if (res?.ok) {
+          router.push("/dashboard");
+        } else {
+          setLoading(false);
+          setError("Google Login sync failed.");
+        }
       }
     } catch (error: any) {
       setLoading(false);
       console.error("Google login failed:", error);
       setError(error.message || "Failed to login with Google");
-    }
-  };
-
-  const handleMagicLink = async () => {
-    if (!email) {
-      setError("Please enter your email first to receive a magic link.");
-      return;
-    }
-    setLoading(true);
-    try {
-      const actionCodeSettings = {
-        url: window.location.origin + '/dashboard',
-        handleCodeInApp: true,
-      };
-      await sendSignInLinkToEmail(auth, email, actionCodeSettings);
-      window.localStorage.setItem('emailForSignIn', email);
-      setMagicLinkSent(true);
-      setLoading(false);
-      setError(null);
-      alert(`Magic link sent! Please check your inbox for ${email}`);
-    } catch (error: any) {
-      setLoading(false);
-      console.error("Magic link error:", error);
-      setError(error.message || "Failed to send magic link.");
     }
   };
 
@@ -201,26 +209,15 @@ export default function SignupPage() {
             {loading ? "Creating Account..." : "Sign Up"}
           </button>
           
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={handleMagicLink}
-              disabled={loading || magicLinkSent}
-              className="w-full py-3 bg-white/5 border border-white/10 rounded-xl text-white font-medium hover:bg-white/10 transition-all text-sm flex items-center justify-center gap-2"
-            >
-              <Sparkles className="w-4 h-4 text-purple-400" />
-              {magicLinkSent ? "Link Sent!" : "Sign up with Magic Link"}
-            </button>
-            <button
-              type="button"
-              onClick={handleGoogleLogin}
-              disabled={loading}
-              className="w-full py-3 bg-white/5 border border-white/10 rounded-xl text-white font-medium hover:bg-white/10 transition-all text-sm flex items-center justify-center gap-2 relative overflow-hidden"
-            >
-              <img src="https://authjs.dev/img/providers/google.svg" alt="Google" className="w-5 h-5 absolute left-4" />
-              Google
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={handleGoogleLogin}
+            disabled={loading}
+            className="w-full py-3 bg-white/5 border border-white/10 rounded-xl text-white font-medium hover:bg-white/10 transition-all text-sm flex items-center justify-center gap-2 relative overflow-hidden"
+          >
+            <img src="https://authjs.dev/img/providers/google.svg" alt="Google" className="w-5 h-5 absolute left-4" />
+            Sign up with Google
+          </button>
         </form>
 
         <div className="mt-6 text-center text-sm text-slate-400">

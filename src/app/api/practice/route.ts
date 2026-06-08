@@ -1,10 +1,41 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
+import { getFirebaseAdmin } from "@/firebaseAdmin";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 
 export async function POST(req: Request) {
   try {
+    const session = await getServerSession(authOptions);
+    const userId = (session?.user as any)?.id;
+
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized. Please login." }, { status: 401 });
+    }
+
+    const { adminDb } = getFirebaseAdmin();
+    const userDoc = await adminDb.collection("users").doc(userId).get();
+    if (!userDoc.exists) {
+      return NextResponse.json({ error: "User not found." }, { status: 404 });
+    }
+
+    const userData = userDoc.data();
+    const plan = userData?.plan || "free";
+    const isUnlimited = userData?.isUnlimited || false;
+    const isPremium = plan === "premium" || plan === "school" || isUnlimited;
+
+    if (!isPremium) {
+      const trialsUsed = userData?.practiceFreeTrialsUsed || 0;
+      if (trialsUsed >= 2) {
+        return NextResponse.json(
+          { error: "Free trials for practice quizzes exhausted. Please upgrade to Premium." },
+          { status: 403 }
+        );
+      }
+    }
+
     const { class: className, subject, chapter, count = 10 } = await req.json();
 
     if (!subject || !chapter) {

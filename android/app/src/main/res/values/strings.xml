@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Axom AI</string>
+    <string name="title_activity_main">Axom AI</string>
+    <string name="package_name">com.axomai.app</string>
+    <string name="custom_url_scheme">com.axomai.app</string>
+</resources>

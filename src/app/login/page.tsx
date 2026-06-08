@@ -1,54 +1,57 @@
 "use client";
 
-import { signIn } from "next-auth/react";
+import { signIn, useSession } from "next-auth/react";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Mail, Lock, ArrowRight, Sparkles, AlertCircle } from "lucide-react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { Logo } from "@/components/Logo";
-import { signInWithPopup, sendSignInLinkToEmail, signInWithEmailAndPassword } from "firebase/auth";
+import { signInWithPopup, signInWithRedirect, getRedirectResult, signInWithEmailAndPassword } from "firebase/auth";
 import { auth, googleProvider, syncUserToFirestore } from "@/firebase";
 
 export default function LoginPage() {
+  const { data: session, status } = useSession();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [magicLinkSent, setMagicLinkSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
   useEffect(() => {
-    import("firebase/auth").then(({ isSignInWithEmailLink, signInWithEmailLink }) => {
-      if (isSignInWithEmailLink(auth, window.location.href)) {
-        let email = window.localStorage.getItem('emailForSignIn');
-        if (!email) {
-          email = window.prompt('Please provide your email for confirmation');
-        }
-        if (email) {
+    if (status === "authenticated") {
+      router.push("/dashboard");
+    }
+  }, [status, router]);
+
+  useEffect(() => {
+    // Handle the redirect result when the page loads back from Google
+    const checkRedirect = async () => {
+      try {
+        const result = await getRedirectResult(auth);
+        if (result) {
           setLoading(true);
-          signInWithEmailLink(auth, email, window.location.href)
-            .then(async (result) => {
-              window.localStorage.removeItem('emailForSignIn');
-              await syncUserToFirestore(result.user);
-              return result.user.getIdToken();
-            })
-            .then((idToken) => signIn("credentials", { idToken, redirect: false }))
-            .then((res) => {
-              if (res?.ok) {
-                router.push("/dashboard");
-              } else {
-                setLoading(false);
-                setError("Magic Link Login sync failed.");
-              }
-            })
-            .catch((error) => {
-              setLoading(false);
-              console.error("Magic link processing error", error);
-            });
+          await syncUserToFirestore(result.user);
+          const idToken = await result.user.getIdToken();
+          
+          const res = await signIn("credentials", {
+            idToken,
+            redirect: false,
+          });
+
+          if (res?.ok) {
+            router.push("/dashboard");
+          } else {
+            setLoading(false);
+            setError("Google Login sync failed.");
+          }
         }
+      } catch (error: any) {
+        console.error("Redirect result error:", error);
       }
-    });
+    };
+    
+    checkRedirect();
   }, [router]);
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -56,13 +59,8 @@ export default function LoginPage() {
     setLoading(true);
     
     try {
-      // Step 1: Sign in with Firebase explicitly to get accurate error messages
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      
-      // Step 2: Get ID token
       const idToken = await userCredential.user.getIdToken();
-      
-      // Step 3: Pass token to NextAuth
       const res = await signIn("credentials", {
         idToken,
         redirect: false,
@@ -77,12 +75,8 @@ export default function LoginPage() {
     } catch (error: any) {
       setLoading(false);
       console.error("Login Error:", error);
-      
-      // Provide meaningful error messages based on Firebase error codes
       if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
         setError("Invalid email or password. Please try again.");
-      } else if (error.code === 'auth/too-many-requests') {
-        setError("Too many failed login attempts. Please try again later or use Magic Link.");
       } else {
         setError(error.message || "Login failed! Please check your credentials.");
       }
@@ -92,49 +86,31 @@ export default function LoginPage() {
   const handleGoogleLogin = async () => {
     setLoading(true);
     try {
-      const result = await signInWithPopup(auth, googleProvider);
-      await syncUserToFirestore(result.user);
-      const idToken = await result.user.getIdToken();
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
       
-      const res = await signIn("credentials", {
-        idToken,
-        redirect: false,
-      });
-
-      if (res?.ok) {
-        router.push("/dashboard");
+      if (isMobile) {
+        await signInWithRedirect(auth, googleProvider);
       } else {
-        setLoading(false);
-        setError("Google Login sync failed.");
+        const result = await signInWithPopup(auth, googleProvider);
+        await syncUserToFirestore(result.user);
+        const idToken = await result.user.getIdToken();
+        
+        const res = await signIn("credentials", {
+          idToken,
+          redirect: false,
+        });
+
+        if (res?.ok) {
+          router.push("/dashboard");
+        } else {
+          setLoading(false);
+          setError("Google Login sync failed.");
+        }
       }
     } catch (error: any) {
       setLoading(false);
       console.error("Google login failed:", error);
       setError(error.message || "Failed to login with Google");
-    }
-  };
-
-  const handleMagicLink = async () => {
-    if (!email) {
-      setError("Please enter your email first to receive a magic link.");
-      return;
-    }
-    setLoading(true);
-    try {
-      const actionCodeSettings = {
-        url: window.location.origin + '/login',
-        handleCodeInApp: true,
-      };
-      await sendSignInLinkToEmail(auth, email, actionCodeSettings);
-      window.localStorage.setItem('emailForSignIn', email);
-      setMagicLinkSent(true);
-      setLoading(false);
-      setError(null);
-      alert(`Magic link sent! Please check your inbox for ${email}`);
-    } catch (error: any) {
-      setLoading(false);
-      console.error("Magic link error:", error);
-      setError(error.message || "Failed to send magic link.");
     }
   };
 
@@ -219,26 +195,15 @@ export default function LoginPage() {
             {loading ? "Signing in..." : "Sign In"}
           </button>
           
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={handleMagicLink}
-              disabled={loading || magicLinkSent}
-              className="w-full py-3 bg-white/5 border border-white/10 rounded-xl text-white font-medium hover:bg-white/10 transition-all text-sm flex items-center justify-center gap-2"
-            >
-              <Sparkles className="w-4 h-4 text-purple-400" />
-              {magicLinkSent ? "Link Sent!" : "Send Magic Link"}
-            </button>
-            <button
-              type="button"
-              onClick={handleGoogleLogin}
-              disabled={loading}
-              className="w-full py-3 bg-white/5 border border-white/10 rounded-xl text-white font-medium hover:bg-white/10 transition-all text-sm flex items-center justify-center gap-2 relative overflow-hidden"
-            >
-              <img src="https://authjs.dev/img/providers/google.svg" alt="Google" className="w-5 h-5 absolute left-4" />
-              Google
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={handleGoogleLogin}
+            disabled={loading}
+            className="w-full py-3 bg-white/5 border border-white/10 rounded-xl text-white font-medium hover:bg-white/10 transition-all text-sm flex items-center justify-center gap-2 relative overflow-hidden"
+          >
+            <img src="https://authjs.dev/img/providers/google.svg" alt="Google" className="w-5 h-5 absolute left-4" />
+            Sign in with Google
+          </button>
         </form>
 
 
